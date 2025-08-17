@@ -21,3 +21,5 @@ firebase-debug.log
 
 # vscode
 .vscode/
+
+*.backup.*
