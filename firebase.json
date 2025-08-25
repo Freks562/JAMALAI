@@ -1,8 +1,13 @@
 {
-  "hosting": [
-    {
-      "site": "dotface-print-on-demand",
-      "source": "."
-    }
-  ]
+  "hosting": {
+    "site": "vetaidjamalai",
+    "source": ".",
+    "rewrites": [
+      {
+        "source": "/stripe-webhook",
+        "function": "stripeWebhook"
+      }
+    ],
+    "public": ".next"
+  }
 }
