@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "deploy:webhook": "bash scripts/deploy-webhook.sh"
+  }
+}
   "name": "jamalai",
   "version": "0.1.0",
   "private": true,
