@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
+    "deploy": "git add -A && git commit -m \"chore: deploy\" || true && git push -u origin main"
   },
   "dependencies": {
     "next": "15.0.0",
