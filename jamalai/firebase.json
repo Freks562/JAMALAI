@@ -1,0 +1,14 @@
+{
+  "functions": { "source": "functions" },
+  "hosting": {
+    "site": "vetaidjamalai",
+    "source": ".",
+    "rewrites": [
+      { "source": "/stripe-webhook", "function": "stripeWebhook" }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
