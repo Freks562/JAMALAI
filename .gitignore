@@ -25,3 +25,6 @@ firebase-debug.log
 *.backup.*
 
 /generated/prisma
+.vercel
+
+.env
