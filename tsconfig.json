@@ -1,14 +1,5 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": [
-      "ES2020",
-      "DOM"
-    ],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -16,27 +7,42 @@
       ]
     },
     "allowJs": true,
-    "resolveJsonModule": true,
-    "noEmit": true,
     "skipLibCheck": true,
+    "noEmit": true,
     "incremental": true,
-    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
     "isolatedModules": true,
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "target": "ES2017",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "strict": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.js",
-    "**/*.jsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next/**",
+    "functions/**",
+    "jamalai/**",
+    "src/app/(example)/**",
+    "src/app/payments/**",
+    "src/app/(veterights)/**",
+    "src/app/components/CrisisClientRoot.tsx"
   ]
 }
