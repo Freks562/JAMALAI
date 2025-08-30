@@ -30,3 +30,5 @@ firebase-debug.log
 .env
 
 .env
+
+prisma/dev.db
