@@ -15,7 +15,7 @@ export default function VetRightPage() {
 
       <section className="mx-auto max-w-5xl px-6 py-16 grid gap-8">
         <header className="grid gap-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">VetRights by JamaIA</h1>
+          <h1 className="text-4xl font-bold tracking-tight">VetRights by JamalAI</h1>
           <p className="text-lg opacity-80">
             A fast, no-nonsense path to benefits, jobs, and safety resources for veterans and families.
           </p>
@@ -53,7 +53,7 @@ export default function VetRightPage() {
         </section>
 
         <footer className="text-center text-xs opacity-70">
-          © {new Date().getFullYear()} JamaIA • Built for veterans, not for ads.
+          © {new Date().getFullYear()} JamalAI • Built for veterans, not for ads.
         </footer>
       </section>
     </main>

@@ -1,10 +1,10 @@
-generator client {
-  provider = "prisma-client-js"
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+generator client {
+  provider = "prisma-client-js"
 }
 
 enum Branch {
@@ -17,46 +17,49 @@ enum Branch {
 }
 
 model Veteran {
-  id         String          @id @default(cuid())
-  name       String
-  rank       String
-  branch     Branch
-  startYear  Int?
-  endYear    Int?
-  records    ServiceRecord[]
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id        String          @id @default(cuid())
+  name      String
+  rank      String
+  branch    Branch
+  startYear Int?
+  endYear   Int?
+  records   ServiceRecord[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 }
 
 model Ship {
   id        String              @id @default(cuid())
   name      String              @unique
+  ships     ServiceRecordShip[]
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
-  ships     ServiceRecordShip[]
 }
 
 model ServiceRecord {
-  id         String              @id @default(cuid())
-  veteranId  String
-  veteran    Veteran             @relation(fields: [veteranId], references: [id])
-  unit       String
-  branch     Branch
-  startYear  Int?
-  endYear    Int?
-  ships      ServiceRecordShip[]
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
+  id        String              @id @default(cuid())
+  veteranId String
+  veteran   Veteran             @relation(fields: [veteranId], references: [id], onDelete: Cascade)
+  unit      String
+  branch    Branch
+  startYear Int?
+  endYear   Int?
+  ships     ServiceRecordShip[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([veteranId])
 }
 
 model ServiceRecordShip {
-  id               String         @id @default(cuid())
-  serviceRecordId  String
-  serviceRecord    ServiceRecord  @relation(fields: [serviceRecordId], references: [id])
-  shipId           String
-  ship             Ship           @relation(fields: [shipId], references: [id])
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  serviceRecordId String
+  shipId          String
+  serviceRecord   ServiceRecord  @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  ship            Ship           @relation(fields: [shipId], references: [id], onDelete: Restrict)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@unique([serviceRecordId, shipId])
+  @@index([shipId])
 }

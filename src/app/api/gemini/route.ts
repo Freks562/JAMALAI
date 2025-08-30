@@ -27,6 +27,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ output });
   } catch (err) {
     console.error('Gemini Error:', err);
-    return NextResponse.json({ output: 'JamalAI ran into an error.' }, { status: 500 });
+    return NextResponse.json({ output: 'JamalAII ran into an error.' }, { status: 500 });
   }
 }
