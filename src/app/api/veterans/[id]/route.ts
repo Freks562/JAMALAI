@@ -1,54 +1,60 @@
+// src/app/api/veterans/[id]/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient, Prisma } from "@prisma/client";
 
-function normalize(v: any) {
-  return {
-    id: v.id,
-    name: v.name,
-    rank: v.rank,
-    branch: v.branch,
-    startYear: v.startYear,
-    endYear: v.endYear,
-    records: v.records.map((r: any) => ({
-      id: r.id,
-      unit: r.unit,
-      startYear: r.startYear,
-      endYear: r.endYear,
-      shipNames: r.ships.map((s: any) => s.ship.name),
-    })),
-    createdAt: v.createdAt,
-    updatedAt: v.updatedAt,
-  };
-}
+const prisma = new PrismaClient();
 
-export async function GET(_req: Request, ctx: { params: { id: string } }) {
-  const v = await prisma.veteran.findUnique({
-    where: { id: ctx.params.id },
-    include: { records: { include: { ships: { include: { ship: true } } } } },
-  });
-  if (!v) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  return NextResponse.json(normalize(v), { status: 200 });
-}
+type Params = { id: string };
 
-export async function PUT(req: Request, ctx: { params: { id: string } }) {
-  const body = await req.json();
-  const v = await prisma.veteran.update({
-    where: { id: ctx.params.id },
-    data: {
-      name: body.name ?? undefined,
-      rank: body.rank ?? undefined,
-      branch: body.branch ?? undefined,
-      startYear: body.startYear ?? undefined,
-      endYear: body.endYear ?? undefined,
+export async function GET(
+  _req: Request,
+  ctx: { params: Promise<Params> }
+) {
+  const { id } = await ctx.params;
+  const row = await prisma.veteran.findUnique({
+    where: { id },
+    select: {
+      id: true, name: true, rank: true, branch: true,
+      startYear: true, endYear: true, createdAt: true, updatedAt: true,
     },
-    include: { records: { include: { ships: { include: { ship: true } } } } },
   });
-  return NextResponse.json(normalize(v), { status: 200 });
+  if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
+  return NextResponse.json(row);
 }
 
-export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
-  await prisma.serviceRecordShip.deleteMany({ where: { serviceRecord: { veteranId: ctx.params.id } } });
-  await prisma.serviceRecord.deleteMany({ where: { veteranId: ctx.params.id } });
-  await prisma.veteran.delete({ where: { id: ctx.params.id } });
-  return NextResponse.json({ ok: true }, { status: 200 });
+export async function PATCH(
+  req: Request,
+  ctx: { params: Promise<Params> }
+) {
+  const { id } = await ctx.params;
+  const body = await req.json();
+
+  // Only send defined fields; coerce branch to Prisma enum when provided.
+  const data: Prisma.VeteranUpdateInput = {
+    name: body.name ?? undefined,
+    rank: body.rank ?? undefined,
+    branch: body.branch ? (body.branch as Prisma.Branch) : undefined,
+    startYear: typeof body.startYear === "number" ? body.startYear : undefined,
+    endYear: typeof body.endYear === "number" ? body.endYear : undefined,
+  };
+
+  const updated = await prisma.veteran.update({
+    where: { id },
+    data,
+    select: {
+      id: true, name: true, rank: true, branch: true,
+      startYear: true, endYear: true, createdAt: true, updatedAt: true,
+    },
+  });
+
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  _req: Request,
+  ctx: { params: Promise<Params> }
+) {
+  const { id } = await ctx.params;
+  await prisma.veteran.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

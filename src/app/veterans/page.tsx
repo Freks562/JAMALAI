@@ -1,219 +1,178 @@
+// src/app/veterans/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 
-type RecordItem = { id: string; unit: string | null; startYear: number | null; endYear: number | null; shipNames: string[] };
-type Vet = {
+type Branch = "ARMY" | "NAVY" | "AIRFORCE" | "MARINES" | "COASTGUARD" | "SPACEFORCE";
+const BRANCHES: Branch[] = ["ARMY", "NAVY", "AIRFORCE", "MARINES", "COASTGUARD", "SPACEFORCE"];
+
+type Veteran = {
   id: string;
-  name: string | null;
-  rank: string | null;
-  branch: "NAVY" | "ARMY" | "AIR_FORCE" | "MARINES" | "COAST_GUARD" | string;
+  name: string;
+  rank: string;
+  branch: Branch;
   startYear: number | null;
   endYear: number | null;
-  records: RecordItem[];
   createdAt: string;
   updatedAt: string;
+  records?: any[]; // if your API includes related records
 };
 
-export default function VeteransPage() {
-  const [list, setList] = useState<Vet[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [rank, setRank] = useState("PO2");
-  const [branch, setBranch] = useState("NAVY");
-  const [startYear, setStartYear] = useState<number | "">("");
-  const [endYear, setEndYear] = useState<number | "">("");
-  const [unit, setUnit] = useState("Amphibious Squadron");
-  const [ships, setShips] = useState("USS Boxer (LHD-4), USS Bonhomme Richard (LHD-6)");
+export default function VeteranDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const [row, setRow] = useState<Veteran | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [editId, setEditId] = useState<string | null>(null);
-  const [eName, setEName] = useState("");
-  const [eRank, setERank] = useState("PO2");
-  const [eBranch, setEBranch] = useState("NAVY");
-  const [eStartYear, setEStartYear] = useState<number | "">("");
-  const [eEndYear, setEEndYear] = useState<number | "">("");
+  const [form, setForm] = useState({
+    name: "",
+    rank: "",
+    branch: "ARMY" as Branch,
+    startYear: "",
+    endYear: "",
+  });
 
-  async function refresh() {
-    setLoading(true);
+  async function load() {
     setError(null);
     try {
-      const res = await fetch("/api/veterans", { cache: "no-store" });
-      const data = await res.json();
-      setList(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
+      const r = await fetch(`/api/veterans/${id}`, { cache: "no-store" });
+      if (r.status === 404) {
+        setError("Not found");
+        setRow(null);
+        return;
+      }
+      if (!r.ok) throw new Error(await r.text());
+      const data: Veteran = await r.json();
+      setRow(data);
+      setForm({
+        name: data.name,
+        rank: data.rank,
+        branch: data.branch,
+        startYear: data.startYear?.toString() ?? "",
+        endYear: data.endYear?.toString() ?? "",
+      });
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load");
     }
   }
 
   useEffect(() => {
-    refresh();
-  }, []);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
+  async function save() {
+    setBusy(true);
     setError(null);
-    const payload = {
-      name,
-      rank,
-      branch,
-      startYear: startYear === "" ? null : Number(startYear),
-      endYear: endYear === "" ? null : Number(endYear),
-      records: [
-        {
-          unit,
-          startYear: startYear === "" ? null : Number(startYear),
-          endYear: endYear === "" ? null : Number(endYear),
-          shipNames: ships.split(",").map(s => s.trim()).filter(Boolean),
-        },
-      ],
-    };
-    const res = await fetch("/api/veterans", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      setError("create_failed");
-      return;
+    try {
+      const payload = {
+        name: form.name.trim(),
+        rank: form.rank.trim(),
+        branch: form.branch,
+        startYear: form.startYear ? Number(form.startYear) : undefined,
+        endYear: form.endYear ? Number(form.endYear) : undefined,
+      };
+      const r = await fetch(`/api/veterans/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      await load();
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to save");
+    } finally {
+      setBusy(false);
     }
-    setName("");
-    setRank("PO2");
-    setBranch("NAVY");
-    setStartYear("");
-    setEndYear("");
-    setUnit("Amphibious Squadron");
-    setShips("USS Boxer (LHD-4), USS Bonhomme Richard (LHD-6)");
-    await refresh();
   }
 
-  function startEdit(v: Vet) {
-    setEditId(v.id);
-    setEName(v.name ?? "");
-    setERank(v.rank ?? "PO2");
-    setEBranch((v.branch as string) || "NAVY");
-    setEStartYear(v.startYear ?? "");
-    setEEndYear(v.endYear ?? "");
-  }
-
-  function cancelEdit() {
-    setEditId(null);
-  }
-
-  async function saveEdit(id: string) {
-    const payload: Partial<Vet> = {
-      name: eName,
-      rank: eRank,
-      branch: eBranch,
-      startYear: eStartYear === "" ? null : Number(eStartYear),
-      endYear: eEndYear === "" ? null : Number(eEndYear),
-    };
-    const res = await fetch(`/api/veterans/${id}`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      setError("update_failed");
-      return;
+  async function remove() {
+    if (!confirm("Delete this record?")) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch(`/api/veterans/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error(await r.text());
+      router.push("/veterans");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to delete");
+    } finally {
+      setBusy(false);
     }
-    setEditId(null);
-    await refresh();
-  }
-
-  async function remove(id: string) {
-    const res = await fetch(`/api/veterans/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setError("delete_failed");
-      return;
-    }
-    await refresh();
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-6 grid gap-8">
-      <header className="grid gap-2 text-center">
-        <h1 className="text-3xl font-bold">Veterans</h1>
-        <p className="opacity-70 text-sm">Create, list, update, delete</p>
-      </header>
+    <main className="p-6 max-w-2xl mx-auto grid gap-4">
+      <button className="underline text-sm" onClick={() => router.push("/veterans")}>
+        ← Back to list
+      </button>
 
-      <form onSubmit={onCreate} className="grid gap-3 rounded-xl border p-4">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <input className="border rounded px-3 py-2" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} />
-          <input className="border rounded px-3 py-2" placeholder="Rank" value={rank} onChange={e=>setRank(e.target.value)} />
-          <select className="border rounded px-3 py-2" value={branch} onChange={e=>setBranch(e.target.value)}>
-            <option>NAVY</option>
-            <option>ARMY</option>
-            <option>AIR_FORCE</option>
-            <option>MARINES</option>
-            <option>COAST_GUARD</option>
-          </select>
-          <input className="border rounded px-3 py-2" placeholder="Unit" value={unit} onChange={e=>setUnit(e.target.value)} />
-          <input className="border rounded px-3 py-2" placeholder="Start Year" value={startYear} onChange={e=>setStartYear(e.target.value === "" ? "" : Number(e.target.value))} />
-          <input className="border rounded px-3 py-2" placeholder="End Year" value={endYear} onChange={e=>setEndYear(e.target.value === "" ? "" : Number(e.target.value))} />
-        </div>
-        <input className="border rounded px-3 py-2" placeholder="Ships (comma-separated)" value={ships} onChange={e=>setShips(e.target.value)} />
-        <button type="submit" className="border rounded px-4 py-2">Create</button>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-      </form>
+      <h1 className="text-2xl font-bold">Veteran</h1>
 
-      <section className="grid gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">All Records</h2>
-          <button onClick={refresh} className="border rounded px-3 py-1">{loading ? "Loading..." : "Refresh"}</button>
-        </div>
+      {error && <div className="rounded border border-red-200 bg-red-50 text-red-800 px-3 py-2">{error}</div>}
 
-        {list.length === 0 ? (
-          <div className="rounded border p-4 text-sm opacity-70">No records yet.</div>
-        ) : (
-          <ul className="grid gap-3">
-            {list.map(v => (
-              <li key={v.id} className="rounded-xl border p-4 grid gap-3">
-                {editId === v.id ? (
-                  <div className="grid gap-2">
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <input className="border rounded px-3 py-2" value={eName} onChange={e=>setEName(e.target.value)} />
-                      <input className="border rounded px-3 py-2" value={eRank} onChange={e=>setERank(e.target.value)} />
-                      <select className="border rounded px-3 py-2" value={eBranch} onChange={e=>setEBranch(e.target.value)}>
-                        <option>NAVY</option>
-                        <option>ARMY</option>
-                        <option>AIR_FORCE</option>
-                        <option>MARINES</option>
-                        <option>COAST_GUARD</option>
-                      </select>
-                      <input className="border rounded px-3 py-2" placeholder="Start Year" value={eStartYear} onChange={e=>setEStartYear(e.target.value === "" ? "" : Number(e.target.value))} />
-                      <input className="border rounded px-3 py-2" placeholder="End Year" value={eEndYear} onChange={e=>setEEndYear(e.target.value === "" ? "" : Number(e.target.value))} />
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={()=>saveEdit(v.id)} className="border rounded px-3 py-1">Save</button>
-                      <button onClick={cancelEdit} className="border rounded px-3 py-1">Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="font-medium">{v.name} • {v.rank} • {v.branch}</div>
-                    <div className="text-sm opacity-70">Service {v.startYear ?? "?"}–{v.endYear ?? "?"}</div>
-                    {!!(v.records && v.records.length) && (
-                      <ul className="mt-1 text-sm list-disc pl-5">
-                        {v.records.map(r => (
-                          <li key={r.id}>
-                            {r.unit} {r.startYear ?? "?"}–{r.endYear ?? "?"}
-                            {!!(r.shipNames && r.shipNames.length) && <> — {r.shipNames.join(", ")}</>}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="flex gap-2 pt-2">
-                      <button onClick={()=>startEdit(v)} className="border rounded px-3 py-1">Edit</button>
-                      <button onClick={()=>remove(v.id)} className="border rounded px-3 py-1">Delete</button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {!row ? (
+        <p className="opacity-70">Loading…</p>
+      ) : (
+        <>
+          <div className="grid gap-2">
+            <input
+              className="border p-2 rounded"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Name"
+            />
+            <input
+              className="border p-2 rounded"
+              value={form.rank}
+              onChange={(e) => setForm((f) => ({ ...f, rank: e.target.value }))}
+              placeholder="Rank"
+            />
+            <select
+              className="border p-2 rounded"
+              value={form.branch}
+              onChange={(e) => setForm((f) => ({ ...f, branch: e.target.value as Branch }))}
+            >
+              {BRANCHES.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="border p-2 rounded"
+                placeholder="Start Year"
+                value={form.startYear}
+                onChange={(e) => setForm((f) => ({ ...f, startYear: e.target.value }))}
+              />
+              <input
+                className="border p-2 rounded"
+                placeholder="End Year"
+                value={form.endYear}
+                onChange={(e) => setForm((f) => ({ ...f, endYear: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button className="border px-4 py-2 rounded" onClick={save} disabled={busy}>
+              Save
+            </button>
+            <button className="border px-4 py-2 rounded" onClick={remove} disabled={busy}>
+              Delete
+            </button>
+          </div>
+
+          <div className="text-xs opacity-60">
+            <div>Created: {new Date(row.createdAt).toLocaleString()}</div>
+            <div>Updated: {new Date(row.updatedAt).toLocaleString()}</div>
+          </div>
+        </>
+      )}
     </main>
   );
 }
