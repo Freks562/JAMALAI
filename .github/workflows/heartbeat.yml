@@ -1,4 +1,4 @@
-name: JamalAI Heartbeat
+name: Institutional Heartbeat
 
 on:
   schedule:
@@ -9,7 +9,10 @@ jobs:
   heartbeat:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase heartbeat
+      - name: Call JamalAI Heartbeat Gateway
         run: |
           curl -X POST \
-          "https://qvtujdcnzmmdcyxctggb.supabase.co/functions/v1/github-heartbeat"
+            "https://qvtujdcnzmmdcyxctggb.supabase.co/functions/v1/jamalai-gateway/heartbeat" \
+            -H "Content-Type: application/json" \
+            -H "X-Heartbeat-Source: github"
+
